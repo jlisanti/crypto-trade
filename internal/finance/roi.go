@@ -1,14 +1,27 @@
 package finance
 
-import "fmt"
+import (
+	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
+	"github.com/shopspring/decimal"
+)
 
 type Trade struct {
-	CurrencyBuy  string
-	CurrencySell string
+	BuyCurrency  string
+	SellCurrency string
+	BuyValue     string
+	SellValue    string
+	BuyQuantity  string
+	SellQuantity string
 	ExchangeRate string
 	Fees         string
 }
 
-func main() {
-	fmt.Println("vim-go")
+func computeROI(trade Trade, asset Asset) (roi float64, value string, age string) {
+	FinalValueOfInvestment = decimal.NewFromString(trade.SellValue)
+	InitialValueOfInvestment = decimal.NewFromString(asset.Quantity)
+	*decimal.NewFromString(asset.BuyPrice)
+	CostOfInvestment = decimal.NewFromString(trade.Fees)
+	roi = ((FinalValueOfInvestment - InitialValueOfInvestment) / CostOfInvestment) * 100.0
+	age = asset.BuyDate
+	value = FinalValueOfInvestment - InitialValueOfInvestment
 }
