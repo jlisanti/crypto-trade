@@ -10,6 +10,7 @@ import (
 	//"github.com/shopspring/decimal"
 	//"github.com/jlisanti/crypto-trade/internal/finance"
 
+	ws "github.com/gorilla/websocket"
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
 )
 
@@ -18,6 +19,15 @@ func main() {
 	// configure coinbasepro
 
 	client := coinbasepro.NewClient()
+	/*
+
+		client.UpdateConfig(&coinbasepro.ClientConfig{
+			BaseURL:    "https://api.pro.coinbase.com/",
+			Key:        "7ec721c05fdaa802a432775c565eeff9",
+			Passphrase: "jr1o3qv98cf",
+			Secret:     "o7Pr8LggG1ywJxsaLwQpmpEWLA87NjNr2cuX7caDw4GHMB86G0C+3hNu6eOSuIzkMKoBzYeKSQumClixXkPB3Q==",
+		})
+	*/
 
 	client.UpdateConfig(&coinbasepro.ClientConfig{
 		BaseURL:    "https://api-public.sandbox.pro.coinbase.com",
@@ -31,11 +41,13 @@ func main() {
 		println(err.Error())
 	}
 
+	println("account connection established")
 	var assets = []assetmanagement.Asset{}
 
 	// Pull asset record from coinbasepro
 	//    need to test that asset information is correctly populated
 	//    from the coinbase record
+	//    currently only defining non FIAT currency as "assets"
 
 	var ledgers []coinbasepro.LedgerEntry
 
@@ -68,8 +80,6 @@ func main() {
 					} else {
 						// Do I need a loop?
 						for index, asset := range assets {
-							fmt.Println(asset.ID)
-							fmt.Println(e.Details.TradeID)
 							if asset.ID == e.Details.TradeID {
 								assets[index].BuyPrice = e.Amount // better way?
 							}
@@ -88,11 +98,34 @@ func main() {
 		}
 	}
 
-	fmt.Println("Assets \n")
-	for _, asset := range assets {
-		fmt.Println(asset.Currency)
-		fmt.Println(asset.Cost)
-		fmt.Println(asset.BuyPrice)
+	var wsDialer ws.Dialer
+	wsConn, _, err := wsDialer.Dial("wss://ws-feed.pro.coinbase.com", nil)
+	if err != nil {
+		println(err.Error())
 	}
 
+	subscribe := coinbasepro.Message{
+		Type: "subscribe",
+		Channels: []coinbasepro.MessageChannel{
+			coinbasepro.MessageChannel{
+				Name: "ticker",
+				ProductIds: []string{
+					"BTC-USD",
+				},
+			},
+		},
+	}
+	if err := wsConn.WriteJSON(subscribe); err != nil {
+		println(err.Error())
+	}
+
+	for true {
+		message := coinbasepro.Message{}
+		if err := wsConn.ReadJSON(&message); err != nil {
+			println(err.Error())
+			break
+		}
+
+		fmt.Println(message.Price)
+	}
 }
