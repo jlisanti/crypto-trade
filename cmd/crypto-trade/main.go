@@ -46,7 +46,7 @@ func main() {
 				println(err.Error())
 			}
 			for _, e := range ledgers {
-				if e.Type != "transfer" {
+				if e.Type == "match" {
 					currencies := strings.Split(e.Details.ProductID, "-")
 
 					// Determine if this was a buy or sell
@@ -55,8 +55,8 @@ func main() {
 
 						// Store asset
 						asset := assetmanagement.Asset{
-							ID:       e.ID,
-							Currency: currencies[0],
+							ID:       e.Details.TradeID,
+							Currency: currencies[0], // Not certain how safe this is
 							Quantity: e.Amount,
 							BuyDate:  time.Time(e.CreatedAt.Time()),
 							BuyPrice: "",
@@ -67,18 +67,20 @@ func main() {
 						// Store purchase price
 					} else {
 						// Do I need a loop?
-						for _, asset := range assets {
-							if asset.ID == e.ID {
-								asset.BuyPrice = e.Amount
+						for index, asset := range assets {
+							fmt.Println(asset.ID)
+							fmt.Println(e.Details.TradeID)
+							if asset.ID == e.Details.TradeID {
+								assets[index].BuyPrice = e.Amount // better way?
 							}
 						}
 					}
 
 					// Store fee
 				} else if e.Type == "fee" {
-					for _, asset := range assets {
-						if asset.ID == e.ID {
-							asset.Cost = e.Amount
+					for index, asset := range assets {
+						if asset.ID == e.Details.TradeID {
+							assets[index].Cost = e.Amount
 						}
 					}
 				}

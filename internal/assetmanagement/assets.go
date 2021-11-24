@@ -19,3 +19,9 @@ type Asset struct {
 	BuyPrice string
 	Cost     string
 }
+
+/*
+func (a *Asset) UpdateBuyPrice(value, string) {
+
+}
+*/
