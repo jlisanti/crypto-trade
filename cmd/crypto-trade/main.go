@@ -1,10 +1,13 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
 	//"os"
+	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
 	//"github.com/shopspring/decimal"
-	//"github.com/jlisanti/crypto-trade/internal/assetmanagement"
 	//"github.com/jlisanti/crypto-trade/internal/finance"
 
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
@@ -12,20 +15,7 @@ import (
 
 func main() {
 
-	//var assets = []assetmanagement.Asset{
-	//		assetmanagement.Asset{
-	//			Index:    0,
-	//			Currency: "USD",
-	//			Quantity: "100.00",
-	//			BuyDate:  "Nov-14-2021",
-	//			BuyPrice: "100.00",
-	//			Cost:     "0.00",
-	//		},
-	//	}
-
-	//	println(os.Getenv("COINBASE_PRO_KEY"))
-	//	println(os.Getenv("COINBASE_PRO_PASSPHRASE"))
-	//	println(os.Getenv("COINBASE_PRO_SECRET"))
+	// configure coinbasepro
 
 	client := coinbasepro.NewClient()
 
@@ -41,7 +31,46 @@ func main() {
 		println(err.Error())
 	}
 
+	var assets = []assetmanagement.Asset{}
+
+	// Pull asset record from coinbasepro
+
+	var ledgers []coinbasepro.LedgerEntry
+
 	for _, a := range accounts {
-		println(a.Balance)
+		cursor := client.ListAccountLedger(a.ID)
+		for cursor.HasMore {
+			if err := cursor.NextPage(&ledgers); err != nil {
+				println(err.Error())
+			}
+			for _, e := range ledgers {
+				if e.Type != "transfer" {
+					currencies := strings.Split(e.Details.ProductID, "-")
+
+					// Determine if this was a buy or sell
+					transferAmount, _ := strconv.ParseFloat(e.Amount, 64)
+					if transferAmount > float64(0.0) {
+
+						// Store asset
+						asset := assetmanagement.Asset{
+							Index:    e.ID,
+							Currency: currencies[0],
+							Quantity: e.Amount,
+							BuyDate:  time.Time(e.CreatedAt.Time()),
+							BuyPrice: "",
+							Cost:     "",
+						}
+						assets = append(assets, asset)
+
+					}
+				}
+			}
+		}
 	}
+
+	fmt.Println("Assets \n")
+	for i := range assets {
+		fmt.Println(assets[i].Currency)
+	}
+
 }

@@ -14,6 +14,7 @@ type Trade struct {
 	SellQuantity string
 	ExchangeRate string
 	Fees         string
+	Exchange     string
 }
 
 func computeROI(trade Trade, asset Asset) (roi float64, value string, age string) {

@@ -1,6 +1,8 @@
 package assetmanagement
 
-import ()
+import (
+	"time"
+)
 
 // Note that asset quantities are stored in their recorded currency
 
@@ -10,10 +12,10 @@ import ()
 //}
 
 type Asset struct {
-	Index    int
+	Index    string
 	Currency string
 	Quantity string
-	BuyDate  string
+	BuyDate  time.Time
 	BuyPrice string
 	Cost     string
 }
