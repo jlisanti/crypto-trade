@@ -34,6 +34,8 @@ func main() {
 	var assets = []assetmanagement.Asset{}
 
 	// Pull asset record from coinbasepro
+	//    need to test that asset information is correctly populated
+	//    from the coinbase record
 
 	var ledgers []coinbasepro.LedgerEntry
 
@@ -53,7 +55,7 @@ func main() {
 
 						// Store asset
 						asset := assetmanagement.Asset{
-							Index:    e.ID,
+							ID:       e.ID,
 							Currency: currencies[0],
 							Quantity: e.Amount,
 							BuyDate:  time.Time(e.CreatedAt.Time()),
@@ -62,6 +64,22 @@ func main() {
 						}
 						assets = append(assets, asset)
 
+						// Store purchase price
+					} else {
+						// Do I need a loop?
+						for _, asset := range assets {
+							if asset.ID == e.ID {
+								asset.BuyPrice = e.Amount
+							}
+						}
+					}
+
+					// Store fee
+				} else if e.Type == "fee" {
+					for _, asset := range assets {
+						if asset.ID == e.ID {
+							asset.Cost = e.Amount
+						}
 					}
 				}
 			}
@@ -69,8 +87,10 @@ func main() {
 	}
 
 	fmt.Println("Assets \n")
-	for i := range assets {
-		fmt.Println(assets[i].Currency)
+	for _, asset := range assets {
+		fmt.Println(asset.Currency)
+		fmt.Println(asset.Cost)
+		fmt.Println(asset.BuyPrice)
 	}
 
 }

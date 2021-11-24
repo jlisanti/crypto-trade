@@ -12,7 +12,7 @@ import (
 //}
 
 type Asset struct {
-	Index    string
+	ID       string
 	Currency string
 	Quantity string
 	BuyDate  time.Time
