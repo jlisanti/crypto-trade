@@ -8,7 +8,7 @@ import (
 	//"os"
 	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
 	//"github.com/shopspring/decimal"
-	//"github.com/jlisanti/crypto-trade/internal/finance"
+	"github.com/jlisanti/crypto-trade/internal/finance"
 
 	ws "github.com/gorilla/websocket"
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
@@ -126,6 +126,9 @@ func main() {
 			break
 		}
 
-		fmt.Println(message.Price)
+		//for index, asset := range assets {
+		roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
+		fmt.Println("roi: ", roi, " value: ", value, " age: ", age)
+		//}
 	}
 }
