@@ -8,7 +8,8 @@ import (
 	//"os"
 	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
 	//"github.com/shopspring/decimal"
-	"github.com/jlisanti/crypto-trade/internal/finance"
+	//"github.com/jlisanti/crypto-trade/internal/finance"
+	"github.com/jlisanti/crypto-trade/pkg/utilities"
 
 	ws "github.com/gorilla/websocket"
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
@@ -119,6 +120,8 @@ func main() {
 		println(err.Error())
 	}
 
+	BTCavg := utilities.NewMovingAverage(0.01)
+
 	for true {
 		message := coinbasepro.Message{}
 		if err := wsConn.ReadJSON(&message); err != nil {
@@ -126,9 +129,19 @@ func main() {
 			break
 		}
 
+		// Loop across assets and compute the ROI
 		//for index, asset := range assets {
-		roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
-		fmt.Println("roi: ", roi, " value: ", value, " age: ", age)
+		newPrice, _ := strconv.ParseFloat(message.Price, 64)
+		newTime := message.Time
+
+		// First newPrice message is always ZERO, need better way to prevent this from going through
+		if newPrice != 0.0 {
+			utilities.UpdateValue(BTCavg, newPrice, time.Time(newTime))
+			//roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
+			//fmt.Println("roi: ", roi, " value: ", value, " age: ", age, " average: ", BTCavg.AverageValue, " pop: ", BTCavg.Populated)
+			fmt.Println("price: ", newPrice, " average: ", BTCavg.AverageValue, " pop: ", BTCavg.Populated)
+		}
+
 		//}
 	}
 }
