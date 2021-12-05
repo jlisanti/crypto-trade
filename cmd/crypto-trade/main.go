@@ -2,34 +2,49 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
 	//"os"
-	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
+
 	//"github.com/shopspring/decimal"
-	//"github.com/jlisanti/crypto-trade/internal/finance"
+
+	"github.com/Arafatk/glot"
+
+	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
+	"github.com/jlisanti/crypto-trade/internal/finance"
 	"github.com/jlisanti/crypto-trade/pkg/utilities"
 
 	ws "github.com/gorilla/websocket"
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
 )
 
+type Points struct {
+	x float64
+	y float64
+}
+
 func main() {
+
+	http.HandleFunc("/", rootHandler)
+	log.Fatal(http.ListenAndServe("localhost:8080", nil))
+
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
 
 	// configure coinbasepro
 
 	client := coinbasepro.NewClient()
-	/*
 
-		client.UpdateConfig(&coinbasepro.ClientConfig{
-			BaseURL:    "https://api.pro.coinbase.com/",
-			Key:        "7ec721c05fdaa802a432775c565eeff9",
-			Passphrase: "jr1o3qv98cf",
-			Secret:     "o7Pr8LggG1ywJxsaLwQpmpEWLA87NjNr2cuX7caDw4GHMB86G0C+3hNu6eOSuIzkMKoBzYeKSQumClixXkPB3Q==",
-		})
-	*/
-
+	// Sandbox key
 	client.UpdateConfig(&coinbasepro.ClientConfig{
 		BaseURL:    "https://api-public.sandbox.pro.coinbase.com",
 		Key:        "89b1f52167924567c1a41b42a236d8a1",
@@ -120,7 +135,24 @@ func main() {
 		println(err.Error())
 	}
 
-	BTCavg := utilities.NewMovingAverage(0.01)
+	BTCavg := utilities.NewMovingAverage(1.0)
+
+	// Logic for determining slope FIND A BETTER WAY
+	slp1 := 0.0
+	slp2 := 0.0
+	//t1 := time.Now()
+	//t3 := time.Now()
+	slpIndex := 0
+	slpSpacing := 3
+	slope := 0.0
+
+	fill1 := true
+
+	// glot settings
+	dimensions := 2
+	persist := false
+	debug := false
+	plot, _ := glot.NewPlot(dimensions, persist, debug)
 
 	for true {
 		message := coinbasepro.Message{}
@@ -137,11 +169,54 @@ func main() {
 		// First newPrice message is always ZERO, need better way to prevent this from going through
 		if newPrice != 0.0 {
 			utilities.UpdateValue(BTCavg, newPrice, time.Time(newTime))
-			//roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
-			//fmt.Println("roi: ", roi, " value: ", value, " age: ", age, " average: ", BTCavg.AverageValue, " pop: ", BTCavg.Populated)
-			fmt.Println("price: ", newPrice, " average: ", BTCavg.AverageValue, " pop: ", BTCavg.Populated)
+
+			if fill1 == true {
+				slp1 = BTCavg.AverageValue
+				//t1 = time.Time(newTime)
+				fill1 = false
+			} else if slpIndex == slpSpacing {
+				slp2 = BTCavg.AverageValue
+				//t3 = time.Time(newTime)
+				fill1 = true
+
+				slpIndex = 0
+				slope = (slp2 - slp1)
+			} else {
+				slpIndex++
+			}
+
+			//dt := t3.Sub(t1)
+
+			roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
+			fmt.Fprintln(w, "roi: ", roi, " value: ", value, " age: ", age, " average: ", BTCavg.AverageValue, " slope: ", slope)
+
+			pointGroupName := "Price"
+			style := "circle"
+			//points := zip(BTCavg.Value, BTCavg.Value)
+			//points := [][]float64{{7, 3, 3, 5.6, 5.6, 7, 7, 9, 13, 13, 9, 9}, {10, 10, 4, 4, 5.4, 5.4, 4, 4, 4, 10, 10, 4}}
+			points := [][]float64{{7, 3, 13, 5.6, 11.1}, {12, 13, 11, 1, 7}}
+			plot.AddPointGroup(pointGroupName, style, points)
+			plot.SetTitle("Example Plot")
+			plot.SetXLabel("X-axis")
+			plot.SetYLabel("Y-axis")
+
+			plot.SavePlot("2.png")
 		}
 
 		//}
 	}
+
+	fmt.Fprintln(w, "hello")
+}
+func zip(ts []float64, vs []float64) []Points {
+	if len(ts) != len(vs) {
+		panic("not same length")
+	}
+
+	var res []Points
+	for i, t := range ts {
+		res = append(res, Points{x: t, y: vs[i]})
+	}
+
+	return res
 }

@@ -59,7 +59,6 @@ func UpdateValue(ma *MovingAverage, newValue float64, newTime time.Time) {
 			ma.Value = append(ma.Value, newValue)
 			ma.Time = append(ma.Time, newTime)
 
-			println(delete)
 			if delete != 0 {
 				ma.Value = append(ma.Value[:delete], ma.Value[delete+1:]...)
 				ma.Time = append(ma.Time[:delete], ma.Time[delete+1:]...)
