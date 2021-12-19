@@ -12,8 +12,6 @@ import (
 
 	//"github.com/shopspring/decimal"
 
-	"github.com/Arafatk/glot"
-
 	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
 	"github.com/jlisanti/crypto-trade/internal/finance"
 	"github.com/jlisanti/crypto-trade/pkg/utilities"
@@ -21,11 +19,6 @@ import (
 	ws "github.com/gorilla/websocket"
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
 )
-
-type Points struct {
-	x float64
-	y float64
-}
 
 func main() {
 
@@ -148,13 +141,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	fill1 := true
 
-	// glot settings
-	dimensions := 2
-	persist := false
-	debug := false
-	plot, _ := glot.NewPlot(dimensions, persist, debug)
-
-	for true {
+	for {
 		message := coinbasepro.Message{}
 		if err := wsConn.ReadJSON(&message); err != nil {
 			println(err.Error())
@@ -170,7 +157,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		if newPrice != 0.0 {
 			utilities.UpdateValue(BTCavg, newPrice, time.Time(newTime))
 
-			if fill1 == true {
+			if fill1 {
 				slp1 = BTCavg.AverageValue
 				//t1 = time.Time(newTime)
 				fill1 = false
@@ -189,34 +176,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 			roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
 			fmt.Fprintln(w, "roi: ", roi, " value: ", value, " age: ", age, " average: ", BTCavg.AverageValue, " slope: ", slope)
-
-			pointGroupName := "Price"
-			style := "circle"
-			//points := zip(BTCavg.Value, BTCavg.Value)
-			//points := [][]float64{{7, 3, 3, 5.6, 5.6, 7, 7, 9, 13, 13, 9, 9}, {10, 10, 4, 4, 5.4, 5.4, 4, 4, 4, 10, 10, 4}}
-			points := [][]float64{{7, 3, 13, 5.6, 11.1}, {12, 13, 11, 1, 7}}
-			plot.AddPointGroup(pointGroupName, style, points)
-			plot.SetTitle("Example Plot")
-			plot.SetXLabel("X-axis")
-			plot.SetYLabel("Y-axis")
-
-			plot.SavePlot("2.png")
 		}
-
-		//}
 	}
-
-	fmt.Fprintln(w, "hello")
-}
-func zip(ts []float64, vs []float64) []Points {
-	if len(ts) != len(vs) {
-		panic("not same length")
-	}
-
-	var res []Points
-	for i, t := range ts {
-		res = append(res, Points{x: t, y: vs[i]})
-	}
-
-	return res
 }
