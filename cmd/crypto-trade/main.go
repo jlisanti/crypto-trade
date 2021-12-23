@@ -4,20 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 	"sync"
 	"text/template"
 	"time"
 
-	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
-	"github.com/jlisanti/crypto-trade/pkg/utilities"
 	"github.com/julienschmidt/httprouter"
 	"github.com/julienschmidt/sse"
 	"github.com/kardianos/service"
-
-	ws "github.com/gorilla/websocket"
-	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
 )
 
 type HomePage struct {
@@ -111,6 +104,7 @@ func main() {
 	}
 }
 
+/*
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -288,11 +282,10 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 				            console.log("`+hello+`");
 				            </script>
 				            </body>
-				            </html>`)
-			*/
 
 			//roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
 			//fmt.Fprintln(w, "roi: ", roi, " value: ", value, " age: ", age, " average: ", BTCavg.AverageValue, " slope: ", slope)
 		}
 	}
 }
+*/
