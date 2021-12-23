@@ -2,29 +2,113 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"text/template"
 	"time"
 
-	//"os"
-
-	//"github.com/shopspring/decimal"
-
 	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
-	"github.com/jlisanti/crypto-trade/internal/finance"
 	"github.com/jlisanti/crypto-trade/pkg/utilities"
+	"github.com/julienschmidt/httprouter"
+	"github.com/julienschmidt/sse"
+	"github.com/kardianos/service"
 
 	ws "github.com/gorilla/websocket"
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
 )
 
+type HomePage struct {
+	Time string
+}
+
+const serviceName = "CyptoTrade-0.01"
+const serviceDescription = "Crypto trade bot"
+
+var (
+	serviceIsRunning bool
+	programIsRunning bool
+	writingSync      sync.Mutex
+)
+
+func serveHomepage(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	writingSync.Lock()
+	programIsRunning = true
+	writingSync.Unlock()
+
+	var homepage HomePage
+	homepage.Time = time.Now().Format("02/01/2006, 15:03:04")
+
+	tmpl := template.Must(template.ParseFiles("html/index.html"))
+	_ = tmpl.Execute(writer, homepage)
+
+	writingSync.Lock()
+	programIsRunning = false
+	writingSync.Unlock()
+}
+
+type program struct{}
+
+func (p program) Start(s service.Service) error {
+	fmt.Println(s.String() + " started")
+	writingSync.Lock()
+	serviceIsRunning = true
+	writingSync.Unlock()
+	go p.run()
+	return nil
+}
+
+func (p program) Stop(s service.Service) error {
+	writingSync.Lock()
+	serviceIsRunning = false
+	writingSync.Unlock()
+	for programIsRunning {
+		fmt.Println(s.String() + " stopping...")
+	}
+	fmt.Println(s.String() + " stopped")
+	return nil
+}
+
+func (p program) run() {
+	router := httprouter.New()
+	timer := sse.New()
+
+	router.ServeFiles("/js/*filepath", http.Dir("js"))
+	router.ServeFiles("/css/*filepath", http.Dir("css"))
+
+	router.GET("/", serveHomepage)
+	router.POST("/get_time", getTime)
+
+	router.Handler("GET", "/time", timer)
+	go streamTime(timer)
+
+	err := http.ListenAndServe(":8080", router)
+	if err != nil {
+		fmt.Println("Problem starting web server: " + err.Error())
+		os.Exit(-1)
+	}
+}
+
 func main() {
+	serviceConfig := &service.Config{
+		Name:        serviceName,
+		DisplayName: serviceName,
+		Description: serviceDescription,
+	}
 
-	http.HandleFunc("/", rootHandler)
-	log.Fatal(http.ListenAndServe("localhost:8080", nil))
+	prg := &program{}
+	s, err := service.New(prg, serviceConfig)
 
+	if err != nil {
+		fmt.Println("Cannot create the service: " + err.Error())
+	}
+
+	err = s.Run()
+	if err != nil {
+		fmt.Println("Cannot start the service: " + err.Error())
+	}
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -150,8 +234,8 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Loop across assets and compute the ROI
 		//for index, asset := range assets {
-		newPrice, _ := strconv.ParseFloat(message.Price, 64)
-		newTime := message.Time
+		//newPrice, _ := strconv.ParseFloat(message.Price, 64)
+		//newTime := message.Time
 
 		// First newPrice message is always ZERO, need better way to prevent this from going through
 		if newPrice != 0.0 {
@@ -174,8 +258,41 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 			//dt := t3.Sub(t1)
 
-			roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
-			fmt.Fprintln(w, "roi: ", roi, " value: ", value, " age: ", age, " average: ", BTCavg.AverageValue, " slope: ", slope)
+			fmt.Fprintf(w, `<html>
+			<head>
+			<script type="text/javascript"
+			  src="/Users/Joel/sources/dygraphs/dygraph.js"></script>
+			<link rel="stylesheet" src="dygraph.css" />
+			</head>
+			<body>
+			<div id="graphdiv2"
+			  style="width:500px; height:300px;"></div>
+			<script type="text/javascript">
+			  g2 = new Dygraph(
+				document.getElementById("graphdiv2"),
+				"/Users/Joel/projects/crypto-trade/temperatures.csv", // path to CSV file
+				{}          // options
+			  );
+			</script>
+			</body>
+			</html>`)
+			/*
+							hello := "hello yu bn"
+							fmt.Fprintf(w, `<html>
+				            <head>
+				            </head>
+				            <body>
+				            <h1>Go Timer (ticks every second!)</h1>
+				            <div id="output"></div>
+				            <script type="text/javascript">
+				            console.log("`+hello+`");
+				            </script>
+				            </body>
+				            </html>`)
+			*/
+
+			//roi, value, age := finance.ComputeROI(message.Price, assets[0].Quantity, assets[0].BuyPrice, assets[0].Cost, assets[0].BuyDate)
+			//fmt.Fprintln(w, "roi: ", roi, " value: ", value, " age: ", age, " average: ", BTCavg.AverageValue, " slope: ", slope)
 		}
 	}
 }
