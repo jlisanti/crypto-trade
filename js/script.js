@@ -1,6 +1,6 @@
 const getData = async () => {
     try {
-        const target = `https://data.nasdaq.com/api/v3/datasets/OPEC/ORB.csv`; //file
+        const target = `data.csv`; //file
         const res = await fetch(target, {
             method: 'get',
             headers: {
