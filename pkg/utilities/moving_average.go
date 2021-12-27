@@ -9,8 +9,10 @@ type MovingAverage struct {
 	Length       float64
 	Value        []float64
 	Time         []time.Time
+	TimeValues   []string
 	ValueSum     float64
 	AverageValue float64
+	Averages     []float64
 	Populated    bool
 	NumValues    int
 }
@@ -29,13 +31,14 @@ func UpdateValue(ma *MovingAverage, newValue float64, newTime time.Time) {
 		t2 := newTime
 		timeDiff := t2.Sub(t1)
 
-		if ma.Populated == false {
-
+		if !ma.Populated {
 			ma.Value = append(ma.Value, newValue)
 			ma.Time = append(ma.Time, newTime)
 			ma.ValueSum += newValue
 
 			ma.AverageValue = ma.ValueSum / float64(len(ma.Value))
+			ma.Averages = append(ma.Averages, ma.ValueSum/float64(len(ma.Value)))
+			ma.TimeValues = append(ma.TimeValues, newTime.String())
 
 			if timeDiff.Hours() >= ma.Length {
 				ma.Populated = true
@@ -58,18 +61,25 @@ func UpdateValue(ma *MovingAverage, newValue float64, newTime time.Time) {
 
 			ma.Value = append(ma.Value, newValue)
 			ma.Time = append(ma.Time, newTime)
+			ma.Averages = append(ma.Averages, newValue)
+			ma.TimeValues = append(ma.TimeValues, newTime.String())
 
 			if delete != 0 {
 				ma.Value = append(ma.Value[:delete], ma.Value[delete+1:]...)
 				ma.Time = append(ma.Time[:delete], ma.Time[delete+1:]...)
-
+				ma.Averages = append(ma.Averages[:delete], ma.Averages[delete+1:]...)
+				ma.TimeValues = append(ma.TimeValues[:delete], ma.TimeValues[delete+1:]...)
 			}
 
 			ma.AverageValue = ma.ValueSum / float64(len(ma.Value))
 		}
 
 	} else {
+		ma.Value = append(ma.Value, newValue)
 		ma.Time = append(ma.Time, newTime)
-		ma.AverageValue = newValue
+		ma.ValueSum += newValue
+		ma.AverageValue = ma.ValueSum / float64(len(ma.Value))
+		ma.Averages = append(ma.Averages, ma.ValueSum/float64(len(ma.Value)))
+		ma.TimeValues = append(ma.TimeValues, newTime.String())
 	}
 }

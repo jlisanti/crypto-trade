@@ -8,8 +8,12 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/jlisanti/crypto-trade/internal/assetmanagement"
+	"github.com/jlisanti/crypto-trade/internal/coinbasepro"
+	"github.com/jlisanti/crypto-trade/internal/marketpredictor"
 	"github.com/julienschmidt/httprouter"
-	"github.com/julienschmidt/sse"
+
+	//"github.com/julienschmidt/sse"
 	"github.com/kardianos/service"
 )
 
@@ -24,6 +28,7 @@ var (
 	serviceIsRunning bool
 	programIsRunning bool
 	writingSync      sync.Mutex
+	assets           = []assetmanagement.Asset{}
 )
 
 func serveHomepage(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
@@ -66,16 +71,23 @@ func (p program) Stop(s service.Service) error {
 
 func (p program) run() {
 	router := httprouter.New()
-	timer := sse.New()
+	//timer := sse.New()
 
 	router.ServeFiles("/js/*filepath", http.Dir("js"))
 	router.ServeFiles("/css/*filepath", http.Dir("css"))
 
 	router.GET("/", serveHomepage)
-	router.POST("/get_time", getTime)
+	coinbasepro.ConnectCoinbasepro(&assets)
+	fmt.Println(assets[0].BuyPrice)
 
-	router.Handler("GET", "/time", timer)
-	go streamTime(timer)
+	go marketpredictor.TrackMarket(assets)
+
+	/*
+		router.POST("/get_time", getTime)
+
+		router.Handler("GET", "/time", timer)
+		go streamTime(timer)
+	*/
 
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
