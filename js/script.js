@@ -1,4 +1,5 @@
 const getData = async () => {
+    /*
     try {
         const target = `data.csv`; //file
         const res = await fetch(target, {
@@ -21,7 +22,20 @@ const getData = async () => {
     } catch (err) {
         console.log(err)
     }
+    */
+    g3 = new Dygraph(
+        document.getElementById("graphdiv"),
+        "./dat/data.csv",
+        {
+          rollPeriod: 7,
+          showRoller: true
+        }
+      );
 }
 
+setInterval(function() { 
+    getData();
+}, 100)
+
 // Run
-getData();
+//getData();

@@ -75,6 +75,7 @@ func (p program) run() {
 
 	router.ServeFiles("/js/*filepath", http.Dir("js"))
 	router.ServeFiles("/css/*filepath", http.Dir("css"))
+	router.ServeFiles("/dat/*filepath", http.Dir("dat"))
 
 	router.GET("/", serveHomepage)
 	coinbasepro.ConnectCoinbasepro(&assets)

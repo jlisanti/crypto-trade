@@ -93,7 +93,7 @@ func TrackMarket(assets []assetmanagement.Asset) {
 			fmt.Println("lengths: ", len(xValues), len(y1Values), len(y2Values))
 			//defer file.Close()
 
-			file, err := os.Create("data.csv")
+			file, err := os.Create("./dat/data.csv")
 			if err != nil {
 				log.Fatalln("Failed to open file", err)
 			}
@@ -102,6 +102,7 @@ func TrackMarket(assets []assetmanagement.Asset) {
 			//defer w.Flush()
 
 			for i, xValue := range xValues {
+				//row := []string{xValue, y1Values[i], y2Values[i]}
 				row := []string{xValue, y1Values[i], y2Values[i]}
 				fmt.Println(row)
 				if err := w.Write(row); err != nil {
