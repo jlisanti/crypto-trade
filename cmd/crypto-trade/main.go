@@ -78,12 +78,21 @@ func (p program) run() {
 	router.ServeFiles("/dat/*filepath", http.Dir("dat"))
 
 	router.GET("/", serveHomepage)
-	coinbasepro.ConnectCoinbasepro(&assets)
+	client := coinbasepro.ConnectCoinbasepro(&assets)
 	fmt.Println(assets[0].BuyPrice)
 
-	go marketpredictor.TrackMarket(assets)
+	accounts, err := client.GetAccounts()
+	if err != nil {
+		println(err.Error())
+	}
 
-	err := http.ListenAndServe(":8080", router)
+	for _, a := range accounts {
+		println(a.Currency, a.Balance)
+	}
+
+	go marketpredictor.TrackMarket(assets, &client)
+
+	err = http.ListenAndServe(":8080", router)
 	if err != nil {
 		fmt.Println("Problem starting web server: " + err.Error())
 		os.Exit(-1)

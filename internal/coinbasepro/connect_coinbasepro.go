@@ -9,7 +9,7 @@ import (
 	"github.com/preichenberger/go-coinbasepro/v2"
 )
 
-func ConnectCoinbasepro(assets *[]assetmanagement.Asset) {
+func ConnectCoinbasepro(assets *[]assetmanagement.Asset) coinbasepro.Client {
 	// configure coinbasepro
 
 	client := coinbasepro.NewClient()
@@ -83,4 +83,5 @@ func ConnectCoinbasepro(assets *[]assetmanagement.Asset) {
 			}
 		}
 	}
+	return *client
 }
